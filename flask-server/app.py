@@ -18,6 +18,7 @@ class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)  # Date de création par défaut à la date et heure actuelles
+    completed = db.Column(db.Boolean, default=False)  # Champ pour marquer une tâche comme complétée ou non
     
     def __repr__(self):
         return '<Task %r>' % self.id
