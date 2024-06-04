@@ -1,12 +1,54 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
+from flask import Flask, render_template, request, redirect,jsonify
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 app = Flask(__name__)
-cors = CORS(app,origins=["*"])
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+db = SQLAlchemy(app)
 
-@app.route("/api/users", methods=["GET"])
-def users():
-    return jsonify({"users": ["user1", "user2", "user3"]})
+class Todo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(200),nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.now)
+    
+    def __repr__(self):
+        return '<Task %r>' % self.id
 
-if __name__ == "__main__":
+@app.route('/api/tasks',methods=['POST','GET'])
+def index():
+    if request.method == 'POST':
+        task_content = request.form['content']
+        new_task = Todo(content=task_content)
+        
+        try:
+            db.session.add(new_task)
+            db.session.commit()
+            return redirect('/')
+        except:
+            return 'There was an issue adding your task'
+    else:
+        tasks = Todo.query.order_by(Todo.date_created).all()
+        return jsonify({'tasks': [task.content for task in tasks]})
+
+@app.route('/api/delete/<int:id>')
+def delete(id):
+    task_to_delete = Todo.query.get_or_404(id)
+    try:
+        db.session.delete(task_to_delete)
+        db.session.commit()
+    except:
+        return 'There was a problem deleting that task'
+
+@app.route('/api/edit/<int:id>',methods=['GET','POST'])
+def edit(id):
+    task = Todo.query.get_or_404(id)
+    if request.method == 'POST':
+        task.content = request.form['content']
+        try:
+            db.session.commit()
+        except:
+            return 'There was an issue updating your task'
+    else:
+        return render_template('edit.html',task=task)
+if __name__ == '__main__':
     app.run(debug=True)
