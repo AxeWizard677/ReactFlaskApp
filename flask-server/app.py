@@ -47,7 +47,7 @@ def index():
     else:
         try:
             tasks = Todo.query.order_by(Todo.date_created).all()
-            return jsonify([{'id': task.id, 'content': task.content, 'date_created': task.date_created.isoformat()} for task in tasks])
+            return jsonify([{'id': task.id, 'content': task.content, 'completed': task.completed, 'date_created': task.date_created.isoformat()} for task in tasks])
         except Exception as e:
             return jsonify({'message': 'There was an issue fetching the tasks', 'error': str(e)}), 500
 
@@ -63,6 +63,18 @@ def delete(id):
     except Exception as e:
         return jsonify({'message': 'There was a problem deleting that task', 'error': str(e)}), 500  # Retourner un message d'erreur avec le détail de l'exception et un code 500
 
+@app.route('/api/completed/<int:id>', methods=['PUT'])
+def complete(id):
+    task = Todo.query.get_or_404(id)
+    if not task:
+        return jsonify({'message': 'Task not found'}), 404  # Retourner un message d'erreur avec un code 404 si la tâche n'est pas trouvée
+
+    task.completed = not task.completed
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Task completed/uncompleted successfully'}), 200  # Retourner un message de sélection avec un code 200
+    except Exception as e:
+        return jsonify({'message': 'There was an issue completing/uncompleting your task', 'error': str(e)}), 500  # Retourner un message d'erreur avec le détail de l'exception et un code 500
 # Route pour mettre à jour une tâche
 @app.route('/api/update/<int:id>', methods=['PUT'])
 def update_todo(id):
